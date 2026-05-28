@@ -7,12 +7,12 @@ type Tool = 'cue' | 'object' | 'pocket' | 'calibrate' | 'corner' | 'pan'
 type MarkerKey = 'cue' | 'object' | 'pocket' | 'calA' | 'calB' | 'corner1' | 'corner2' | 'corner3' | 'corner4'
 
 const tools: { key: Tool; label: string; hint: string }[] = [
-  { key: 'cue', label: '1 Cue', hint: 'tap/drag cue ball center' },
-  { key: 'object', label: '2 Object', hint: 'tap/drag target ball center' },
-  { key: 'pocket', label: '3 Pocket', hint: 'tap target pocket' },
-  { key: 'calibrate', label: 'Calibrate', hint: 'tap two edges of any ball' },
-  { key: 'corner', label: 'Table corners', hint: 'tap 4 table corners clockwise' },
-  { key: 'pan', label: 'Move view', hint: 'drag table; wheel/pinch zoom' },
+  { key: 'cue', label: '① Cue', hint: 'pusat bola putih' },
+  { key: 'object', label: '② Object', hint: 'pusat bola target' },
+  { key: 'pocket', label: '③ Pocket', hint: 'lubang tujuan' },
+  { key: 'calibrate', label: 'Calibrate', hint: '2 sisi diameter bola' },
+  { key: 'corner', label: 'Corners', hint: '4 sudut meja searah' },
+  { key: 'pan', label: 'Move view', hint: 'drag, wheel, pinch' },
 ]
 const markerOrder: MarkerKey[] = ['cue', 'object', 'pocket', 'calA', 'calB', 'corner1', 'corner2', 'corner3', 'corner4']
 const defaultRadius = 18
@@ -161,20 +161,20 @@ function App() {
   return (
     <main className="app">
       <header className="hero">
-        <div><p className="eyebrow">v0.5 prototype</p><h1>Billiard Aim Assistant</h1><p>Camera-ready aiming overlay: ghost ball, contact point, cut angle, cue tangent path.</p></div>
+        <div><p className="eyebrow">v0.6 prototype</p><h1>Billiard Aim Assistant</h1><p>Bidik lebih rapi: ghost ball, contact point, cut angle, tangent line, difficulty.</p></div>
         <div className="metric"><span>{Math.round(ballRadius * 2)}px</span><small>ball diameter</small></div>
       </header>
 
       <section className="toolbar">
-        <label className="capture">📷 Capture / upload<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
+        <label className="capture">📷 Ambil / upload foto meja<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
         <div className="toolgrid">{tools.map(t => <button key={t.key} className={tool === t.key ? 'active' : ''} onClick={() => setTool(t.key)}><b>{t.label}</b><small>{t.hint}</small></button>)}</div>
-        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset corners</button><button onClick={resetAll}>Clear all</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="4" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑ Pan</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓ Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>← Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→ Pan</button><button onClick={resetView}>Reset view</button></div>
+        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset meja</button><button onClick={resetAll}>Clear semua</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="4" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>←</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→</button><button onClick={resetView}>Reset view</button></div>
         {pocketPresets.length > 0 && <div className="pockets">{pocketPresets.map((p, i) => <button key={i} onClick={() => setPocket(p)}>Pocket {i + 1}</button>)}</div>}
       </section>
 
       <section className={`stage ${tool === 'pan' ? 'panning' : ''}`} ref={stageRef} onPointerDown={handleStageTap} onWheel={handleWheel}>
         <div className="zoomLayer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
-        {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Lalu tap cue → object → pocket. Marker bisa di-drag.</span></div>}
+        {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Urutan cepat: Cue → Object → Pocket. Pakai Move view untuk geser/zoom.</span></div>}
         <svg className="overlay">
           {corners.length === 4 && <polygon points={corners.map(p => `${p.x},${p.y}`).join(' ')} className="tablePoly" />}
           {pocketPresets.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="9" className="presetPocket" />)}
@@ -189,10 +189,10 @@ function App() {
 
       <section className="readout">
         <div><b>Status</b><span>{cue && object && pocket ? 'Shot ready' : tools.find(t => t.key === tool)?.hint}</span></div>
-        <div><b>Table corners</b><span>{corners.length}/4</span></div>
-        <div><b>Cut angle</b><span>{geometry?.cut ? `${geometry.cut.toFixed(1)}°` : '—'}</span></div>
-        <div><b>Ghost ball</b><span>{geometry ? `${Math.round(geometry.ghost.x)}, ${Math.round(geometry.ghost.y)}` : '—'}</span></div>
-        <div><b>Difficulty</b><span>{geometry?.difficulty ? `${geometry.difficulty}/100 ${geometry.difficulty < 35 ? 'Easy' : geometry.difficulty < 70 ? 'Medium' : 'Hard'}` : '—'}</span></div>
+        <div><b>Meja</b><span>{corners.length}/4</span></div>
+        <div><b>Cut</b><span>{geometry?.cut ? `${geometry.cut.toFixed(1)}°` : '—'}</span></div>
+        <div><b>Ghost</b><span>{geometry ? `${Math.round(geometry.ghost.x)}, ${Math.round(geometry.ghost.y)}` : '—'}</span></div>
+        <div><b>Sulit</b><span>{geometry?.difficulty ? `${geometry.difficulty}/100 ${geometry.difficulty < 35 ? 'Easy' : geometry.difficulty < 70 ? 'Medium' : 'Hard'}` : '—'}</span></div>
         <div className="nudge"><b>Nudge {selected ?? '—'}</b><span><button onClick={() => nudge(0, -1)}>↑</button><button onClick={() => nudge(-1, 0)}>←</button><button onClick={() => nudge(1, 0)}>→</button><button onClick={() => nudge(0, 1)}>↓</button></span></div>
       </section>
     </main>
