@@ -13,13 +13,17 @@ p { margin: 0; color: #b9d8c8; }
 .toolbar { display: grid; gap: 12px; padding: 14px; border: 1px solid #204334; border-radius: 24px; background: #0b1b13; }
 .capture { border: 1px dashed #3d9b66; border-radius: 18px; padding: 14px; color: #67ffa4; font-weight: 900; cursor: pointer; display: grid; gap: 8px; }
 .capture input { color: #dffff0; }
-.toolgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.toolgrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
 button { border: 1px solid #2b6848; background: #10291d; color: #effff6; border-radius: 18px; padding: 12px; font-weight: 800; cursor: pointer; }
 button small { display: block; margin-top: 4px; color: #8fb5a0; font-weight: 600; }
 button.active { background: #67ffa4; color: #05200f; border-color: #67ffa4; }
 button.active small { color: #0b4d26; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.actions, .pockets { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.zoom { display: flex; gap: 10px; align-items: center; border: 1px solid #2b6848; background: #10291d; color: #effff6; border-radius: 18px; padding: 10px 12px; font-weight: 800; }
+.zoom input { accent-color: #67ffa4; }
+.pockets button { padding: 9px 12px; border-radius: 999px; color: #ffe9a6; }
 .stage { position: relative; min-height: 64vh; overflow: hidden; border: 1px solid #2b6848; border-radius: 28px; background: radial-gradient(circle, #185130, #071b11); touch-action: none; box-shadow: inset 0 0 0 1px #ffffff08; }
+.zoomLayer { position: absolute; inset: 0; transform-origin: center; transition: transform .15s ease; }
 .stage img { width: 100%; height: 100%; min-height: 64vh; object-fit: contain; display: block; user-select: none; pointer-events: none; }
 .empty { position: absolute; inset: 0; display: grid; place-content: center; gap: 10px; text-align: center; color: #9fc7b2; padding: 28px; }
 .empty b { font-size: clamp(26px, 6vw, 54px); color: #dffff0; }
@@ -29,15 +33,18 @@ button.active small { color: #0b4d26; }
 .marker.object { background: #ffc74055; border: 3px solid #ffc740; color: #fff1b8; }
 .marker.pocket { background: #ff4a4a66; border: 3px solid #ff4a4a; color: #fff; }
 .marker.calA, .marker.calB { width: 18px !important; height: 18px !important; background: #4aa3ff; border: 3px solid #bfe0ff; }
+.marker.corner1, .marker.corner2, .marker.corner3, .marker.corner4 { width: 24px !important; height: 24px !important; background: #9b5cff; border: 3px solid #eadcff; color: #fff; }
+.tablePoly { fill: rgba(155, 92, 255, .08); stroke: #9b5cff; stroke-width: 3; stroke-dasharray: 8 8; }
+.presetPocket { fill: rgba(255,74,74,.35); stroke: #ffb3b3; stroke-width: 2; }
 .ghost { fill: rgba(103,255,164,.17); stroke: #67ffa4; stroke-width: 4; stroke-dasharray: 7 7; filter: drop-shadow(0 0 12px #67ffa488); }
 .aimLine { stroke: #67ffa4; stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 8px #67ffa4aa); }
 .objectLine { stroke: #ffc740; stroke-width: 4; stroke-linecap: round; stroke-dasharray: 12 8; }
 .tangent { stroke: #7ad7ff; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 5 7; }
 .contact { fill: #ff4af3; stroke: #fff; stroke-width: 2; }
 .calLine { stroke: #4aa3ff; stroke-width: 3; stroke-linecap: round; }
-.readout { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.readout { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .readout div { border: 1px solid #204334; border-radius: 18px; background: #0b1b13; padding: 14px; display: grid; gap: 4px; }
 .readout b { color: #67ffa4; }
 .readout span { color: #c9ead8; }
-@media (max-width: 760px) { .hero { flex-direction: column; } .metric { min-height: 92px; } .toolgrid, .readout { grid-template-columns: 1fr 1fr; } .stage, .stage img { min-height: 58vh; } }
-@media (max-width: 480px) { .app { padding: 10px; } .toolgrid, .readout { grid-template-columns: 1fr; } button { border-radius: 14px; } }
+@media (max-width: 860px) { .hero { flex-direction: column; } .metric { min-height: 92px; } .toolgrid, .readout { grid-template-columns: 1fr 1fr; } .stage, .stage img { min-height: 58vh; } }
+@media (max-width: 520px) { .app { padding: 10px; } .toolgrid, .readout { grid-template-columns: 1fr; } button { border-radius: 14px; } }
