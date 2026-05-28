@@ -1,0 +1,25 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #07120d; color: #effff6; }
+.app { min-height: 100vh; padding: 20px; display: grid; gap: 16px; max-width: 960px; margin: 0 auto; }
+header { padding: 22px; border: 1px solid #204334; border-radius: 24px; background: linear-gradient(135deg, #10291d, #07120d); }
+h1 { margin: 0 0 8px; font-size: clamp(32px, 7vw, 64px); line-height: .9; }
+p { color: #b9d8c8; margin: 0; }
+.eyebrow { color: #63ff9f; text-transform: uppercase; letter-spacing: .14em; font-size: 12px; margin-bottom: 10px; }
+.panel { display: grid; gap: 12px; padding: 14px; border: 1px solid #204334; border-radius: 20px; background: #0b1b13; }
+.upload { display: grid; gap: 8px; padding: 14px; border: 1px dashed #3b8f61; border-radius: 16px; color: #63ff9f; cursor: pointer; }
+.upload input { color: #cffff0; }
+.steps { display: flex; gap: 8px; flex-wrap: wrap; }
+button { border: 1px solid #2b6848; background: #10291d; color: #effff6; padding: 10px 14px; border-radius: 999px; font-weight: 700; }
+button.active { background: #63ff9f; color: #05200f; border-color: #63ff9f; }
+.table { position: relative; min-height: 62vh; overflow: hidden; border: 1px solid #2b6848; border-radius: 24px; background: radial-gradient(circle, #174b2c, #082014); touch-action: manipulation; }
+.table img { width: 100%; height: 100%; min-height: 62vh; object-fit: contain; display: block; }
+.placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #9fc7b2; font-size: 22px; }
+.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.cue { fill: rgba(255,255,255,.38); stroke: white; stroke-width: 3; }
+.object { fill: rgba(255,199,64,.38); stroke: #ffc740; stroke-width: 3; }
+.pocket { fill: rgba(255,74,74,.5); stroke: #ff4a4a; stroke-width: 3; }
+.ghost { fill: rgba(99,255,159,.2); stroke: #63ff9f; stroke-width: 3; stroke-dasharray: 6 6; }
+.aimLine { stroke: #63ff9f; stroke-width: 4; stroke-linecap: round; }
+.objectLine { stroke: #ffc740; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 10 8; }
+footer { color: #80a792; text-align: center; padding-bottom: 20px; }
