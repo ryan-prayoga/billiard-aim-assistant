@@ -1,0 +1,13 @@
+{
+  "name": "Billiard Aim Assistant",
+  "short_name": "Billiard Aim",
+  "description": "Real-life billiard aiming helper with ghost ball overlay.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06100b",
+  "theme_color": "#67ffa4",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icons.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
