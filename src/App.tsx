@@ -37,6 +37,8 @@ function App() {
   const [corner4, setCorner4] = useState<Point | null>(null)
   const [cornerStep, setCornerStep] = useState(0)
   const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
+  const [selected, setSelected] = useState<MarkerKey | null>(null)
   const [dragging, setDragging] = useState<MarkerKey | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
 
@@ -65,7 +67,7 @@ function App() {
     const move = (e: globalThis.PointerEvent) => {
       if (!dragging || !stageRef.current) return
       const r = stageRef.current.getBoundingClientRect()
-      place(dragging, { x: e.clientX - r.left, y: e.clientY - r.top })
+      place(dragging, screenToWorld(e.clientX - r.left, e.clientY - r.top))
     }
     const up = () => setDragging(null)
     window.addEventListener('pointermove', move)
@@ -84,10 +86,17 @@ function App() {
     if (key === 'corner3') setCorner3(p)
     if (key === 'corner4') setCorner4(p)
   }
+  const screenToWorld = (x: number, y: number): Point => ({ x: (x - pan.x) / zoom, y: (y - pan.y) / zoom })
   const pointFromEvent = (e: PointerEvent<HTMLDivElement>) => {
     const r = e.currentTarget.getBoundingClientRect()
-    return { x: e.clientX - r.left, y: e.clientY - r.top }
+    return screenToWorld(e.clientX - r.left, e.clientY - r.top)
   }
+  const nudge = (dx: number, dy: number) => {
+    if (!selected || !markers[selected]) return
+    const p = markers[selected]!
+    place(selected, { x: p.x + dx, y: p.y + dy })
+  }
+  const resetView = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
   const handleStageTap = (e: PointerEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).dataset.marker) return
     const p = pointFromEvent(e)
@@ -125,12 +134,12 @@ function App() {
       <section className="toolbar">
         <label className="capture">📷 Capture / upload<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
         <div className="toolgrid">{tools.map(t => <button key={t.key} className={tool === t.key ? 'active' : ''} onClick={() => setTool(t.key)}><b>{t.label}</b><small>{t.hint}</small></button>)}</div>
-        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset corners</button><button onClick={resetAll}>Clear all</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="2.5" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label></div>
+        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset corners</button><button onClick={resetAll}>Clear all</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑ Pan</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓ Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>← Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→ Pan</button><button onClick={resetView}>Reset view</button></div>
         {pocketPresets.length > 0 && <div className="pockets">{pocketPresets.map((p, i) => <button key={i} onClick={() => setPocket(p)}>Pocket {i + 1}</button>)}</div>}
       </section>
 
       <section className="stage" ref={stageRef} onPointerDown={handleStageTap}>
-        <div className="zoomLayer" style={{ transform: `scale(${zoom})` }}>
+        <div className="zoomLayer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
         {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Lalu tap cue → object → pocket. Marker bisa di-drag.</span></div>}
         <svg className="overlay">
           {corners.length === 4 && <polygon points={corners.map(p => `${p.x},${p.y}`).join(' ')} className="tablePoly" />}
@@ -140,7 +149,7 @@ function App() {
           {geometry && <><circle cx={geometry.ghost.x} cy={geometry.ghost.y} r={ballRadius} className="ghost" /><circle cx={geometry.contact.x} cy={geometry.contact.y} r="5" className="contact" /><line x1={geometry.tangentA.x} y1={geometry.tangentA.y} x2={geometry.tangentB.x} y2={geometry.tangentB.y} className="tangent" /></>}
           {calA && calB && <line x1={calA.x} y1={calA.y} x2={calB.x} y2={calB.y} className="calLine" />}
         </svg>
-        {markerOrder.map(k => markers[k] && <button key={k} data-marker={k} className={`marker ${k}`} style={{ left: markers[k]!.x, top: markers[k]!.y, width: k === 'pocket' ? 26 : ballRadius * 2, height: k === 'pocket' ? 26 : ballRadius * 2 }} onPointerDown={(e) => { e.stopPropagation(); setDragging(k) }}>{k === 'cue' ? 'C' : k === 'object' ? 'O' : k === 'pocket' ? 'P' : k.startsWith('corner') ? k.slice(-1) : ''}</button>)}
+        {markerOrder.map(k => markers[k] && <button key={k} data-marker={k} className={`marker ${k} ${selected === k ? 'selected' : ''}`} style={{ left: markers[k]!.x, top: markers[k]!.y, width: k === 'pocket' ? 26 : ballRadius * 2, height: k === 'pocket' ? 26 : ballRadius * 2 }} onPointerDown={(e) => { e.stopPropagation(); setSelected(k); setDragging(k) }}>{k === 'cue' ? 'C' : k === 'object' ? 'O' : k === 'pocket' ? 'P' : k.startsWith('corner') ? k.slice(-1) : ''}</button>)}
         </div>
       </section>
 
@@ -149,6 +158,7 @@ function App() {
         <div><b>Table corners</b><span>{corners.length}/4</span></div>
         <div><b>Cut angle</b><span>{geometry?.cut ? `${geometry.cut.toFixed(1)}°` : '—'}</span></div>
         <div><b>Ghost ball</b><span>{geometry ? `${Math.round(geometry.ghost.x)}, ${Math.round(geometry.ghost.y)}` : '—'}</span></div>
+        <div className="nudge"><b>Nudge {selected ?? '—'}</b><span><button onClick={() => nudge(0, -1)}>↑</button><button onClick={() => nudge(-1, 0)}>←</button><button onClick={() => nudge(1, 0)}>→</button><button onClick={() => nudge(0, 1)}>↓</button></span></div>
       </section>
     </main>
   )
