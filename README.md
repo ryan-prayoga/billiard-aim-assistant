@@ -25,4 +25,4 @@ npm run build
 
 ## Status
 
-v0.6 prototype: polished glass UI, clearer Indonesian workflow copy, responsive control layout, manual marker placement, calibrated ball size, table corner overlay, pocket presets, wheel/pinch zoom, drag pan, selected-marker nudging, shot difficulty meter, installable PWA shell.
+v0.7 prototype: simpler non-AI UI, grounded copy, responsive controls, manual marker placement, calibrated ball size, table corner overlay, pocket presets, wheel/pinch zoom, drag pan, selected-marker nudging, shot difficulty meter, installable PWA shell.

@@ -7,12 +7,12 @@ type Tool = 'cue' | 'object' | 'pocket' | 'calibrate' | 'corner' | 'pan'
 type MarkerKey = 'cue' | 'object' | 'pocket' | 'calA' | 'calB' | 'corner1' | 'corner2' | 'corner3' | 'corner4'
 
 const tools: { key: Tool; label: string; hint: string }[] = [
-  { key: 'cue', label: '① Cue', hint: 'pusat bola putih' },
-  { key: 'object', label: '② Object', hint: 'pusat bola target' },
-  { key: 'pocket', label: '③ Pocket', hint: 'lubang tujuan' },
-  { key: 'calibrate', label: 'Calibrate', hint: '2 sisi diameter bola' },
-  { key: 'corner', label: 'Corners', hint: '4 sudut meja searah' },
-  { key: 'pan', label: 'Move view', hint: 'drag, wheel, pinch' },
+  { key: 'cue', label: 'Cue', hint: 'bola putih' },
+  { key: 'object', label: 'Object', hint: 'bola target' },
+  { key: 'pocket', label: 'Pocket', hint: 'lubang tujuan' },
+  { key: 'calibrate', label: 'Calibrate', hint: 'ukur diameter' },
+  { key: 'corner', label: 'Corners', hint: 'sudut meja' },
+  { key: 'pan', label: 'Move view', hint: 'geser/zoom' },
 ]
 const markerOrder: MarkerKey[] = ['cue', 'object', 'pocket', 'calA', 'calB', 'corner1', 'corner2', 'corner3', 'corner4']
 const defaultRadius = 18
@@ -161,20 +161,20 @@ function App() {
   return (
     <main className="app">
       <header className="hero">
-        <div><p className="eyebrow">v0.6 prototype</p><h1>Billiard Aim Assistant</h1><p>Bidik lebih rapi: ghost ball, contact point, cut angle, tangent line, difficulty.</p></div>
-        <div className="metric"><span>{Math.round(ballRadius * 2)}px</span><small>ball diameter</small></div>
+        <div><p className="eyebrow">v0.7</p><h1>Aim Board</h1><p>Foto meja, tandai bola, lihat garis bantu.</p></div>
+        <div className="metric"><span>{Math.round(ballRadius * 2)}px</span><small>diameter bola</small></div>
       </header>
 
       <section className="toolbar">
-        <label className="capture">📷 Ambil / upload foto meja<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
+        <label className="capture">Ambil foto meja<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
         <div className="toolgrid">{tools.map(t => <button key={t.key} className={tool === t.key ? 'active' : ''} onClick={() => setTool(t.key)}><b>{t.label}</b><small>{t.hint}</small></button>)}</div>
-        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset meja</button><button onClick={resetAll}>Clear semua</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="4" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>←</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→</button><button onClick={resetView}>Reset view</button></div>
+        <div className="actions"><button onClick={resetShot}>Reset bola</button><button onClick={resetCorners}>Reset meja</button><button onClick={resetAll}>Bersihkan</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="4" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>←</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→</button><button onClick={resetView}>Reset view</button></div>
         {pocketPresets.length > 0 && <div className="pockets">{pocketPresets.map((p, i) => <button key={i} onClick={() => setPocket(p)}>Pocket {i + 1}</button>)}</div>}
       </section>
 
       <section className={`stage ${tool === 'pan' ? 'panning' : ''}`} ref={stageRef} onPointerDown={handleStageTap} onWheel={handleWheel}>
         <div className="zoomLayer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
-        {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Urutan cepat: Cue → Object → Pocket. Pakai Move view untuk geser/zoom.</span></div>}
+        {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Mulai dari cue ball, object ball, lalu pocket.</span></div>}
         <svg className="overlay">
           {corners.length === 4 && <polygon points={corners.map(p => `${p.x},${p.y}`).join(' ')} className="tablePoly" />}
           {pocketPresets.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="9" className="presetPocket" />)}
@@ -188,12 +188,12 @@ function App() {
       </section>
 
       <section className="readout">
-        <div><b>Status</b><span>{cue && object && pocket ? 'Shot ready' : tools.find(t => t.key === tool)?.hint}</span></div>
+        <div><b>Status</b><span>{cue && object && pocket ? 'Siap' : tools.find(t => t.key === tool)?.hint}</span></div>
         <div><b>Meja</b><span>{corners.length}/4</span></div>
         <div><b>Cut</b><span>{geometry?.cut ? `${geometry.cut.toFixed(1)}°` : '—'}</span></div>
         <div><b>Ghost</b><span>{geometry ? `${Math.round(geometry.ghost.x)}, ${Math.round(geometry.ghost.y)}` : '—'}</span></div>
         <div><b>Sulit</b><span>{geometry?.difficulty ? `${geometry.difficulty}/100 ${geometry.difficulty < 35 ? 'Easy' : geometry.difficulty < 70 ? 'Medium' : 'Hard'}` : '—'}</span></div>
-        <div className="nudge"><b>Nudge {selected ?? '—'}</b><span><button onClick={() => nudge(0, -1)}>↑</button><button onClick={() => nudge(-1, 0)}>←</button><button onClick={() => nudge(1, 0)}>→</button><button onClick={() => nudge(0, 1)}>↓</button></span></div>
+        <div className="nudge"><b>Geser {selected ?? '—'}</b><span><button onClick={() => nudge(0, -1)}>↑</button><button onClick={() => nudge(-1, 0)}>←</button><button onClick={() => nudge(1, 0)}>→</button><button onClick={() => nudge(0, 1)}>↓</button></span></div>
       </section>
     </main>
   )
