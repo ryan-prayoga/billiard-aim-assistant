@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { ChangeEvent, PointerEvent } from 'react'
+import type { ChangeEvent, PointerEvent, WheelEvent } from 'react'
 import './App.css'
 
 type Point = { x: number; y: number }
-type Tool = 'cue' | 'object' | 'pocket' | 'calibrate' | 'corner'
+type Tool = 'cue' | 'object' | 'pocket' | 'calibrate' | 'corner' | 'pan'
 type MarkerKey = 'cue' | 'object' | 'pocket' | 'calA' | 'calB' | 'corner1' | 'corner2' | 'corner3' | 'corner4'
 
 const tools: { key: Tool; label: string; hint: string }[] = [
@@ -12,6 +12,7 @@ const tools: { key: Tool; label: string; hint: string }[] = [
   { key: 'pocket', label: '3 Pocket', hint: 'tap target pocket' },
   { key: 'calibrate', label: 'Calibrate', hint: 'tap two edges of any ball' },
   { key: 'corner', label: 'Table corners', hint: 'tap 4 table corners clockwise' },
+  { key: 'pan', label: 'Move view', hint: 'drag table; wheel/pinch zoom' },
 ]
 const markerOrder: MarkerKey[] = ['cue', 'object', 'pocket', 'calA', 'calB', 'corner1', 'corner2', 'corner3', 'corner4']
 const defaultRadius = 18
@@ -40,7 +41,10 @@ function App() {
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 })
   const [selected, setSelected] = useState<MarkerKey | null>(null)
   const [dragging, setDragging] = useState<MarkerKey | null>(null)
+  const [viewDrag, setViewDrag] = useState<{ x: number; y: number; pan: Point } | null>(null)
   const stageRef = useRef<HTMLDivElement>(null)
+  const pointers = useRef(new Map<number, Point>())
+  const pinch = useRef<{ dist: number; zoom: number; center: Point } | null>(null)
 
   const corners = useMemo(() => [corner1, corner2, corner3, corner4].filter(Boolean) as Point[], [corner1, corner2, corner3, corner4])
   const pocketPresets = useMemo(() => {
@@ -60,20 +64,31 @@ function App() {
     const tangentB = add(object, tangent, -ballRadius * 2.4)
     const cueToGhost = cue ? unit(cue, ghost) : null
     const cut = cue && cueToGhost ? Math.acos(clamp(cueToGhost.x * objToPocket.x + cueToGhost.y * objToPocket.y, -1, 1)) * 180 / Math.PI : null
-    return { ghost, contact, tangentA, tangentB, cut }
+    const cueDistance = cue ? dist(cue, ghost) : 0
+    const objDistance = dist(object, pocket)
+    const difficulty = cue && cut !== null ? clamp(Math.round(cut * 1.7 + (cueDistance + objDistance) / Math.max(ballRadius, 1) * 1.2), 1, 100) : null
+    return { ghost, contact, tangentA, tangentB, cut, difficulty }
   }, [cue, object, pocket, ballRadius])
 
   useEffect(() => {
     const move = (e: globalThis.PointerEvent) => {
+      if (pointers.current.has(e.pointerId)) pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+      const ps = [...pointers.current.values()]
+      if (ps.length >= 2 && pinch.current) {
+        const d = dist(ps[0], ps[1]) || 1
+        zoomAt(pinch.current.center.x, pinch.current.center.y, pinch.current.zoom * d / pinch.current.dist)
+        return
+      }
+      if (viewDrag) { setPan({ x: viewDrag.pan.x + e.clientX - viewDrag.x, y: viewDrag.pan.y + e.clientY - viewDrag.y }); return }
       if (!dragging || !stageRef.current) return
       const r = stageRef.current.getBoundingClientRect()
       place(dragging, screenToWorld(e.clientX - r.left, e.clientY - r.top))
     }
-    const up = () => setDragging(null)
+    const up = (e: globalThis.PointerEvent) => { pointers.current.delete(e.pointerId); pinch.current = null; setDragging(null); setViewDrag(null) }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
     return () => { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up) }
-  }, [dragging])
+  }, [dragging, viewDrag, pan, zoom])
 
   const place = (key: MarkerKey, p: Point) => {
     if (key === 'cue') setCue(p)
@@ -97,8 +112,27 @@ function App() {
     place(selected, { x: p.x + dx, y: p.y + dy })
   }
   const resetView = () => { setZoom(1); setPan({ x: 0, y: 0 }) }
+  const zoomAt = (clientX: number, clientY: number, nextZoom: number) => {
+    if (!stageRef.current) return
+    const r = stageRef.current.getBoundingClientRect()
+    const sx = clientX - r.left
+    const sy = clientY - r.top
+    const world = screenToWorld(sx, sy)
+    const z = clamp(nextZoom, 1, 4)
+    setZoom(z)
+    setPan({ x: sx - world.x * z, y: sy - world.y * z })
+  }
+  const handleWheel = (e: WheelEvent<HTMLDivElement>) => { e.preventDefault(); zoomAt(e.clientX, e.clientY, zoom * (e.deltaY < 0 ? 1.08 : 0.92)) }
   const handleStageTap = (e: PointerEvent<HTMLDivElement>) => {
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    const ps = [...pointers.current.values()]
+    if (ps.length >= 2) {
+      const center = { x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2 }
+      pinch.current = { dist: dist(ps[0], ps[1]) || 1, zoom, center }
+      return
+    }
     if ((e.target as HTMLElement).dataset.marker) return
+    if (tool === 'pan') { setViewDrag({ x: e.clientX, y: e.clientY, pan }); return }
     const p = pointFromEvent(e)
     if (tool === 'calibrate') {
       if (!calA || (calA && calB)) { setCalA(p); setCalB(null) } else setCalB(p)
@@ -127,18 +161,18 @@ function App() {
   return (
     <main className="app">
       <header className="hero">
-        <div><p className="eyebrow">v0.4 prototype</p><h1>Billiard Aim Assistant</h1><p>Camera-ready aiming overlay: ghost ball, contact point, cut angle, cue tangent path.</p></div>
+        <div><p className="eyebrow">v0.5 prototype</p><h1>Billiard Aim Assistant</h1><p>Camera-ready aiming overlay: ghost ball, contact point, cut angle, cue tangent path.</p></div>
         <div className="metric"><span>{Math.round(ballRadius * 2)}px</span><small>ball diameter</small></div>
       </header>
 
       <section className="toolbar">
         <label className="capture">📷 Capture / upload<input type="file" accept="image/*" capture="environment" onChange={handleImage} /></label>
         <div className="toolgrid">{tools.map(t => <button key={t.key} className={tool === t.key ? 'active' : ''} onClick={() => setTool(t.key)}><b>{t.label}</b><small>{t.hint}</small></button>)}</div>
-        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset corners</button><button onClick={resetAll}>Clear all</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑ Pan</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓ Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>← Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→ Pan</button><button onClick={resetView}>Reset view</button></div>
+        <div className="actions"><button onClick={resetShot}>Reset shot</button><button onClick={resetCorners}>Reset corners</button><button onClick={resetAll}>Clear all</button><label className="zoom">Zoom {zoom.toFixed(1)}x<input type="range" min="1" max="4" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} /></label><button onClick={() => setPan(p => ({ ...p, y: p.y + 30 }))}>↑ Pan</button><button onClick={() => setPan(p => ({ ...p, y: p.y - 30 }))}>↓ Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x + 30 }))}>← Pan</button><button onClick={() => setPan(p => ({ ...p, x: p.x - 30 }))}>→ Pan</button><button onClick={resetView}>Reset view</button></div>
         {pocketPresets.length > 0 && <div className="pockets">{pocketPresets.map((p, i) => <button key={i} onClick={() => setPocket(p)}>Pocket {i + 1}</button>)}</div>}
       </section>
 
-      <section className="stage" ref={stageRef} onPointerDown={handleStageTap}>
+      <section className={`stage ${tool === 'pan' ? 'panning' : ''}`} ref={stageRef} onPointerDown={handleStageTap} onWheel={handleWheel}>
         <div className="zoomLayer" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})` }}>
         {image ? <img src={image} alt="Pool table" /> : <div className="empty"><b>Ambil foto meja</b><span>Lalu tap cue → object → pocket. Marker bisa di-drag.</span></div>}
         <svg className="overlay">
@@ -158,6 +192,7 @@ function App() {
         <div><b>Table corners</b><span>{corners.length}/4</span></div>
         <div><b>Cut angle</b><span>{geometry?.cut ? `${geometry.cut.toFixed(1)}°` : '—'}</span></div>
         <div><b>Ghost ball</b><span>{geometry ? `${Math.round(geometry.ghost.x)}, ${Math.round(geometry.ghost.y)}` : '—'}</span></div>
+        <div><b>Difficulty</b><span>{geometry?.difficulty ? `${geometry.difficulty}/100 ${geometry.difficulty < 35 ? 'Easy' : geometry.difficulty < 70 ? 'Medium' : 'Hard'}` : '—'}</span></div>
         <div className="nudge"><b>Nudge {selected ?? '—'}</b><span><button onClick={() => nudge(0, -1)}>↑</button><button onClick={() => nudge(-1, 0)}>←</button><button onClick={() => nudge(1, 0)}>→</button><button onClick={() => nudge(0, 1)}>↓</button></span></div>
       </section>
     </main>

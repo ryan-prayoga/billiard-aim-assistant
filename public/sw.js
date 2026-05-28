@@ -1,4 +1,4 @@
-const CACHE = 'billiard-aim-v3'
+const CACHE = 'billiard-aim-v4'
 const ASSETS = ['/', '/manifest.webmanifest', '/favicon.svg', '/icons.svg']
 
 self.addEventListener('install', (event) => {

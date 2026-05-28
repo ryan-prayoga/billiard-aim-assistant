@@ -25,4 +25,4 @@ npm run build
 
 ## Status
 
-v0.4 prototype: manual marker placement, calibrated ball size, table corner overlay, pocket presets, compensated zoom/pan, selected-marker nudging, improved geometry overlay, installable PWA shell.
+v0.5 prototype: manual marker placement, calibrated ball size, table corner overlay, pocket presets, wheel zoom, drag pan, selected-marker nudging, shot difficulty meter, improved geometry overlay, installable PWA shell.
