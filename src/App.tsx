@@ -127,7 +127,7 @@ function App() {
   return (
     <main className="app">
       <header className="hero">
-        <div><p className="eyebrow">v0.3 prototype</p><h1>Billiard Aim Assistant</h1><p>Camera-ready aiming overlay: ghost ball, contact point, cut angle, cue tangent path.</p></div>
+        <div><p className="eyebrow">v0.4 prototype</p><h1>Billiard Aim Assistant</h1><p>Camera-ready aiming overlay: ghost ball, contact point, cut angle, cue tangent path.</p></div>
         <div className="metric"><span>{Math.round(ballRadius * 2)}px</span><small>ball diameter</small></div>
       </header>
 
